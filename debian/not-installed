@@ -1,0 +1,4 @@
+usr/share/installed-tests/*
+usr/share/metainfo/*
+usr/share/gtk-doc/*
+usr/libexec/installed-tests/*

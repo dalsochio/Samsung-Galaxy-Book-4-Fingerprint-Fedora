@@ -1,0 +1,10 @@
+13589f2d38fc91a2875e7d86c129ec6a  usr/include/libfprint-2/fp-context.h
+2bdc192bbe3a2055ca9b317596e70113  usr/include/libfprint-2/fp-device.h
+e9fba95f026fda63762c9d58c0b70a2a  usr/include/libfprint-2/fp-enums.h
+2c8742473d0cf9069607049eaa1d6aaf  usr/include/libfprint-2/fp-image-device.h
+961fe57bb11224a031e377070a1d243a  usr/include/libfprint-2/fp-image.h
+b8fc0581781de0698347cb85664173d3  usr/include/libfprint-2/fp-print.h
+ad11107f54bdc7a940d26f432007d502  usr/include/libfprint-2/fprint.h
+7c78509d1ce0be1222a7d99730368b65  usr/lib/x86_64-linux-gnu/pkgconfig/libfprint-2.pc
+7a37a9f9df03b22bee47478ac29f9b87  usr/share/doc/libfprint-dev/changelog.Debian.gz
+74138b10ac2e1180834b3f697f384118  usr/share/doc/libfprint-dev/copyright

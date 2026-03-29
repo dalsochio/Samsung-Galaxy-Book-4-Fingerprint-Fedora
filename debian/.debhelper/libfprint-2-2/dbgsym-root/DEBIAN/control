@@ -1,0 +1,14 @@
+Package: libfprint-2-2-dbgsym
+Package-Type: ddeb
+Source: libfprint
+Version: 1:1.94.10-1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Shubham <shubham@unknown>
+Installed-Size: 1244
+Depends: libfprint-2-2 (= 1:1.94.10-1)
+Section: debug
+Priority: optional
+Multi-Arch: same
+Description: debug symbols for libfprint-2-2
+Build-Ids: bd14b2c82dfed4897758da824c02ecf76a076ad9

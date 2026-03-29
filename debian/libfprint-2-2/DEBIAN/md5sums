@@ -1,0 +1,6 @@
+c132d4042f8465a70b7dceb46264f694  usr/lib/udev/rules.d/70-libfprint-2.rules
+12a73c0c9ff2ca7d0ed19cdb071a7a79  usr/lib/x86_64-linux-gnu/girepository-1.0/FPrint-2.0.typelib
+d397d8cb09c75695cf47ac148d00a28e  usr/lib/x86_64-linux-gnu/libfprint-2.so.2.0.0
+7a37a9f9df03b22bee47478ac29f9b87  usr/share/doc/libfprint-2-2/changelog.Debian.gz
+74138b10ac2e1180834b3f697f384118  usr/share/doc/libfprint-2-2/copyright
+486a4bf3bbb573fa6104f41d6a9d5496  usr/share/gir-1.0/FPrint-2.0.gir

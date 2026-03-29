@@ -1,0 +1,5 @@
+debian/tmp/usr/lib/x86_64-linux-gnu/libfprint-2.so.2
+debian/tmp/usr/lib/x86_64-linux-gnu/libfprint-2.so.2.0.0
+debian/tmp/usr/lib/udev/rules.d/70-libfprint-2.rules
+debian/tmp/usr/lib/x86_64-linux-gnu/girepository-1.0/FPrint-2.0.typelib
+debian/tmp/usr/share/gir-1.0/FPrint-2.0.gir

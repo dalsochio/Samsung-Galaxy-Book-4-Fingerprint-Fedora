@@ -1,0 +1,13 @@
+Package: libfprint-2-2
+Source: libfprint
+Version: 1:1.94.10-1
+Architecture: amd64
+Maintainer: Shubham <shubham@unknown>
+Installed-Size: 918
+Depends: libc6 (>= 2.38), libglib2.0-0t64 (>= 2.68.0), libgudev-1.0-0 (>= 146), libgusb2 (>= 0.3.3), libpixman-1-0 (>= 0.30.0), libssl3t64 (>= 3.0.0)
+Section: libs
+Priority: optional
+Multi-Arch: same
+Homepage: <insert the upstream URL, if relevant>
+Description: <insert up to 60 chars description>
+ <Insert long description, indented with spaces.>

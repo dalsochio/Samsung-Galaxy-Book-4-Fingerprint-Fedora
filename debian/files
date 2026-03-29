@@ -1,0 +1,4 @@
+libfprint-2-2-dbgsym_1.94.10-1_amd64.ddeb debug optional architecture=amd64 automatic=yes
+libfprint-2-2_1.94.10-1_amd64.deb libs optional architecture=amd64
+libfprint-dev_1.94.10-1_amd64.deb libs optional architecture=amd64
+libfprint_1.94.10-1_amd64.buildinfo libs optional
