@@ -48,6 +48,13 @@ This repository provides:
 
 ---
 
+## Automatic Permissions Fix
+
+This installer automatically configures system permissions using polkit.
+
+Without this, you may see:
+PermissionDenied: Not Authorized
+
 ## Installation
 
 ### 1. Clone the repository
