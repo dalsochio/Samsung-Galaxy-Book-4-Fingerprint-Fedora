@@ -53,8 +53,8 @@ This repository provides:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/ishashanknigam/libfprint-focaltech-ubuntu.git
-cd libfprint-focaltech-ubuntu
+git clone https://github.com/ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu.git
+cd Samsung-Galaxy-Book-4-Fingerprint-Ubuntu
 ```
 
 ### 2. Run installer
