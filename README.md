@@ -225,6 +225,11 @@ Use at your own risk.
 
 ---
 
+## Keywords
+Samsung Galaxy Book 4 Ubuntu fingerprint fix  
+Linux fingerprint Samsung laptop  
+libfprint Galaxy Book 4  
+
 ## Author
 
 Maintained by: Shashank
