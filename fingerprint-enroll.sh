@@ -87,6 +87,43 @@ if [[ "$USER_NAME" == "root" || "$EUID" -eq 0 ]]; then
   exit 1
 fi
 
+# ---------- hand drawing ---------------------------------------------------
+# print_hands <enrolled_list>
+# Draws both hands side by side. Fingertips that are enrolled appear as a
+# green ● ; unenrolled fingertips show their digit (0-9) in dim colour.
+# The enrolled_list is the newline-separated output of get_enrolled().
+print_hands() {
+  local enrolled_list="${1:-}"
+  local BT='`'   # backtick — avoids subshell issues inside printf "..."
+
+  # Build display char for each position 0-9.
+  local -a d
+  local i
+  for i in {0..9}; do
+    if echo "$enrolled_list" | grep -qx "${FINGERS_BY_PROMPT[$i]}"; then
+      d[$i]="${C_GREEN}●${C_RESET}"
+    else
+      d[$i]="${C_DIM}${i}${C_RESET}"
+    fi
+  done
+
+  printf "     ${C_BOLD}Left hand${C_RESET}                       ${C_BOLD}Right hand${C_RESET}\n"
+  printf "\n"
+  printf "          _.-._                          _.-._\n"
+  printf "        _|%s|%s|%s|\\                       /|%s|%s|%s|_\n" \
+    "${d[1]}" "${d[2]}" "${d[3]}" "${d[6]}" "${d[7]}" "${d[8]}"
+  printf "       |%s| | | ||                       || | | |%s|\n" \
+    "${d[0]}" "${d[9]}"
+  printf "       | | | | ||                       || | | | |\n"
+  printf "       | ${BT}     ||_                     _||     ${BT} |\n"
+  printf "       ;       /%s//                   \\\\\\\\%s\\       ;\n" \
+    "${d[4]}" "${d[5]}"
+  printf "       |        //                     \\\\\\\\        |\n"
+  printf "        \\\\      //                       \\\\\\\\      /\n"
+  printf "         |    | |                       | |    |\n"
+  printf "         |    | |                       | |    |\n"
+}
+
 # ---------- helpers --------------------------------------------------------
 require_fprintd() {
   if ! command -v fprintd-enroll >/dev/null 2>&1; then
@@ -137,28 +174,14 @@ prompt_finger() {
     echo
     printf "${C_BOLD}%s${C_RESET}\n" "$prompt"
     echo
-    printf "     ${C_BOLD}Left hand${C_RESET}                       ${C_BOLD}Right hand${C_RESET}\n"
+    # Show hands with enrolled dots so the user sees what's already registered.
+    print_hands "$(get_enrolled)"
     echo
-    cat <<'HANDS'
-          _.-._                          _.-._
-        _|1|2|3|\                       /|6|7|8|_
-       |0| | | ||                       || | | |9|
-       | | | | ||                       || | | | |
-       | `     ||_                     _||     ` |
-       ;       /4//                   \\5\       ;
-       |        //                     \\        |
-        \      //                       \\      /
-         |    | |                       | |    |
-         |    | |                       | |    |
-HANDS
+    printf "  ${C_DIM}0) left pinky    1) left ring    2) left middle   3) left index   4) left thumb${C_RESET}\n"
+    printf "  ${C_DIM}5) right thumb   ${C_RESET}6) right index  ${C_GREEN}← recommended${C_RESET}${C_DIM}   7) right middle  8) right ring   9) right pinky${C_RESET}\n"
     echo
-    printf "  0) pinky                         5) thumb\n"
-    printf "  1) ring                          6) index  ${C_GREEN}← recommended${C_RESET}\n"
-    printf "  2) middle                        7) middle\n"
-    printf "  3) index                         8) ring\n"
-    printf "  4) thumb                         9) pinky\n"
+    printf "  ${C_GREEN}●${C_RESET} = already enrolled     ${C_DIM}digit${C_RESET} = not enrolled yet\n"
     echo
-    echo "  Numbers go from your left pinky (0) to your right pinky (9)."
     echo "  Most people enroll 6 — the right index finger you point with."
     echo
   } >&2
@@ -396,13 +419,9 @@ interactive_menu() {
     local enrolled
     enrolled="$(get_enrolled)"
     echo
+    print_hands "$enrolled"
     if [[ -z "$enrolled" ]]; then
-      printf "  ${C_DIM}Currently enrolled: (none)${C_RESET}\n"
-    else
-      echo "  Currently enrolled:"
-      while IFS= read -r f; do
-        printf "    ${C_GREEN}●${C_RESET} %s\n" "$f"
-      done <<< "$enrolled"
+      printf "\n  ${C_DIM}No fingers enrolled yet.${C_RESET}\n"
     fi
     echo
     cat <<EOF
