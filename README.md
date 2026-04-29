@@ -13,6 +13,45 @@ Make the fingerprint reader of the **Samsung Galaxy Book 4** work on **Fedora**
 
 ---
 
+## What it looks like
+
+Once installed, run `./fingerprint-enroll.sh` to manage your fingerprints.
+The tool shows a live view of your hands — enrolled fingers appear as `●`,
+unenrolled ones show their number so you can pick one to register:
+
+```
+Fingerprint manager (user: yourname)
+
+     Left hand                       Right hand
+
+          _.-._                          _.-._
+        _|1|2|3|\                       /|●|7|8|_
+       |0| | | ||                       || | | |9|
+       | | | | ||                       || | | | |
+       | `     ||_                     _||     ` |
+       ;       /4//                   \\●\       ;
+       |        //                     \\        |
+        \      //                       \\      /
+         |    | |                       | |    |
+         |    | |                       | |    |
+
+  e) Enroll a new finger
+  v) Verify a finger (test)
+  d) Delete a finger
+  D) Delete ALL fingers
+  l) List enrolled fingers
+  q) Quit
+
+>
+```
+
+> In a real terminal the `●` dots are highlighted in green and the
+> unenrolled digits appear dimmed. The same drawing is shown every time
+> you enroll, verify or delete a finger, so you always know exactly what
+> is registered.
+
+---
+
 ## Will this work for me?
 
 You need **all three** of these to be true:
