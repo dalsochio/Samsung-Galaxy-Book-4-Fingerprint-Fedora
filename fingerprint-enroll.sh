@@ -390,6 +390,7 @@ cmd_delete_all() {
 # ---------- interactive menu ----------------------------------------------
 interactive_menu() {
   while true; do
+    clear 2>/dev/null || printf '\033[2J\033[H'
     title "Fingerprint manager (user: $USER_NAME)"
 
     local enrolled
@@ -422,9 +423,11 @@ EOF
       d) cmd_delete ;;
       D) cmd_delete_all ;;
       l|L) cmd_list ;;
-      q|Q|"") info "Bye."; return 0 ;;
+      q|Q|"") clear 2>/dev/null || true; info "Bye."; return 0 ;;
       *) err "Unknown option: $action" ;;
     esac
+    echo
+    read -rp "Press Enter to continue..." _
   done
 }
 
