@@ -137,26 +137,16 @@ prompt_finger() {
     echo
     printf "${C_BOLD}%s${C_RESET}\n" "$prompt"
     echo
-    cat <<'EOF'
-   LEFT HAND                         RIGHT HAND
-
-       1                                       6
-     2                                           7
-     3   |  | |                         | | |   8
-     4   |  | |                         | | |   9
-     5   |__| |                         | |__|  10
-         |    |                         |    |
-         |____|                         |____|
-
-    1) left-little-finger    6) right-thumb
-    2) left-ring-finger      7) right-index-finger
-    3) left-middle-finger    8) right-middle-finger
-    4) left-index-finger     9) right-ring-finger
-    5) left-thumb           10) right-little-finger
-EOF
+    printf "  ${C_BOLD}LEFT HAND${C_RESET}                    ${C_BOLD}RIGHT HAND${C_RESET}\n"
+    echo "  ─────────                    ──────────"
+    printf "   1) pinky                      6) thumb\n"
+    printf "   2) ring                       7) index   ${C_GREEN}← recommended${C_RESET}\n"
+    printf "   3) middle                     8) middle\n"
+    printf "   4) index                      9) ring\n"
+    printf "   5) thumb                     10) pinky\n"
     echo
-    echo "  Most people pick ${C_BOLD}7${C_RESET} (right index finger) — the one you usually"
-    echo "  point with."
+    echo "  Numbers go from your left pinky (1) to your right pinky (10)."
+    echo "  Most people enroll #7 — the right index finger you point with."
     echo
   } >&2
   local choice
