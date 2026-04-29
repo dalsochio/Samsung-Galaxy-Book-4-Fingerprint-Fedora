@@ -18,15 +18,19 @@ FocalTech Match-on-Chip support (libfprint MR #554, by Sid1803).
 git clone https://github.com/dalsochio/Samsung-Galaxy-Book-4-Fingerprint-Fedora.git
 cd Samsung-Galaxy-Book-4-Fingerprint-Fedora
 chmod +x install.sh fingerprint-enroll.sh uninstall.sh
+
+# 1) Install the patched libfprint and enable PAM (run as root):
 sudo ./install.sh
-```
 
-The installer offers to enroll your fingerprint at the end. You can
-also run the enrollment helper any time:
-
-```bash
+# 2) Enroll your fingerprint (run as your NORMAL user, NOT sudo):
 ./fingerprint-enroll.sh
 ```
+
+> The two steps run under different accounts on purpose. The installer
+> needs root to change system files. The enrollment must run as your
+> normal user so the desktop authentication agent can authorise it —
+> running it under `sudo` causes a `PermissionDenied` error from
+> polkit.
 
 ---
 
@@ -69,8 +73,9 @@ also run the enrollment helper any time:
    stock one and break the sensor again. **You can unlock it any time
    — see the section below.**
 8. **Refreshes** `ldconfig`, `udev`, and restarts `fprintd`.
-9. **Offers to enroll** your fingerprint by calling
-   `fingerprint-enroll.sh`.
+9. **Tells you what to do next** — namely, run
+   `./fingerprint-enroll.sh` as your normal user (without sudo) to
+   actually register a finger.
 
 ---
 

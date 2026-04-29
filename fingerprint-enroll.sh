@@ -48,7 +48,12 @@ FINGERS=(
   left-little-finger  right-little-finger
 )
 
-USER_NAME="${SUDO_USER:-$USER}"
+# Determine which user to manage fingerprints for.
+# Priority: the actual current EUID, then $USER, then $SUDO_USER.
+# We deliberately do NOT trust $SUDO_USER first because the helper may
+# have been launched via `sudo -u someuser` from a root shell, in which
+# case $SUDO_USER still points at root.
+USER_NAME="$(id -un 2>/dev/null || echo "${USER:-${SUDO_USER:-}}")"
 
 # Refuse to run for the root account: enrolling fingerprints under root is
 # almost never what the user wants, and fprintd's DBus policy denies it

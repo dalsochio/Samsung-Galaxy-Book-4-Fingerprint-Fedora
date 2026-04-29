@@ -214,62 +214,36 @@ echo "  Version lock      : active (libfprint)"
 echo
 ok "All done."
 
-# ---------- 10. optional enrollment ----------------------------------------
-step 10 "$TOTAL_STEPS" "Optional fingerprint enrollment"
+# ---------- 10. next steps -------------------------------------------------
+step 10 "$TOTAL_STEPS" "Next step: enroll a fingerprint"
 
-# Figure out the real (non-root) user, even if the installer was started
-# from a root shell (`su -`, `sudo -i`, etc.).
-TARGET_USER="${SUDO_USER:-}"
-if [[ -z "$TARGET_USER" ]]; then
-  TARGET_USER="$(logname 2>/dev/null || true)"
-fi
-if [[ -z "$TARGET_USER" || "$TARGET_USER" == "root" ]]; then
-  TARGET_USER="$(who am i 2>/dev/null | awk '{print $1}')"
-fi
+cat <<EOF
 
-echo
-echo "Fedora has no graphical interface for fingerprint enrollment, so it"
-echo "must be done from the terminal. This repository ships a helper script"
-printf "(${C_BOLD}fingerprint-enroll.sh${C_RESET}) that walks you through it and lets you\n"
-echo "register multiple fingers, list them, test, or delete."
-echo
+Fedora has no graphical interface for fingerprint enrollment, so it must
+be done from the terminal. The installer does NOT do it for you because
+the enrollment must run as your normal user (not root / sudo) so that
+the desktop's authentication agent can authorise it.
 
-if [[ -n "$TARGET_USER" && "$TARGET_USER" != "root" ]]; then
-  echo "Detected user: ${C_BOLD}${TARGET_USER}${C_RESET}"
-  echo "(fingerprints will be enrolled for this user)"
-  echo
-else
-  warn "Could not detect a regular (non-root) user."
-  echo "  You should not enroll fingerprints under the root account."
-  echo "  Skip this step and run the helper later as your normal user:"
-  echo "    $REPO_DIR/fingerprint-enroll.sh"
-  echo
-  TARGET_USER=""
-fi
+${C_BOLD}To enroll your fingerprint, open a NEW terminal as your normal user
+(without sudo) and run:${C_RESET}
 
-read -rp "Enroll fingerprints now? [Y/n] " ans
-case "${ans,,}" in
-  ""|y|yes)
-    if [[ -n "$TARGET_USER" ]]; then
-      sudo -u "$TARGET_USER" bash "$REPO_DIR/fingerprint-enroll.sh"
-    else
-      warn "Skipping enrollment because no real user was detected."
-    fi
-    ;;
-  *)
-    echo
-    echo "Skipped. You can enroll later by running (as your user, no sudo):"
-    echo "    $REPO_DIR/fingerprint-enroll.sh"
-    ;;
-esac
+    cd "$REPO_DIR"
+    ./fingerprint-enroll.sh
 
-echo
-echo "----------------------------------------"
-echo "Useful commands:"
-echo "  fprintd-list \$USER          # show enrolled fingers"
-echo "  fprintd-verify              # test"
-echo "  ./fingerprint-enroll.sh     # enroll/verify/delete (interactive)"
-echo
-echo "To uninstall everything (and remove enrollments):"
-echo "  sudo ./uninstall.sh"
-echo "----------------------------------------"
+That helper offers an interactive menu to:
+  * enroll one or more fingers
+  * test (verify) a finger
+  * list and delete enrolled fingers
+
+You can also run it any time later to add more fingers.
+
+----------------------------------------
+Useful commands (run as your user, no sudo):
+  fprintd-list \$USER          # show enrolled fingers
+  fprintd-verify              # test
+  ./fingerprint-enroll.sh     # enroll/verify/delete (interactive)
+
+To uninstall everything (and remove enrollments):
+  sudo ./uninstall.sh
+----------------------------------------
+EOF
