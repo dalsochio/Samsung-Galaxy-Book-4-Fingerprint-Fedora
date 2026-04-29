@@ -17,7 +17,7 @@ Hace funcionar el lector de huellas dactilares del **Samsung Galaxy Book 4** en 
 
 Una vez instalado, ejecuta `./fingerprint-enroll.sh` para gestionar tus huellas.
 La herramienta muestra una vista en tiempo real de tus manos — los dedos registrados
-aparecen como `●`, los no registrados muestran su número para que puedas elegir cuál registrar:
+aparecen como `●`, los no registrados muestran su número para que elijas cuál registrar:
 
 ```
 Fingerprint manager (user: tuusuario)
@@ -62,7 +62,7 @@ Necesitas que las **tres** condiciones sean verdaderas:
       lsusb | grep 2808:6553
       ```
       Si aparece una línea, todo bien. Si no aparece nada, esta corrección
-      **no** te ayudará — es específica para ese sensor exacto.
+      **no** funcionará para ti — es específica para ese sensor exacto.
 
 ---
 
@@ -75,7 +75,7 @@ git clone https://github.com/dalsochio/Samsung-Galaxy-Book-4-Fingerprint-Fedora.
 cd Samsung-Galaxy-Book-4-Fingerprint-Fedora
 chmod +x install.sh fingerprint-enroll.sh uninstall.sh
 
-# 1) Instala el controlador corregido y activa el inicio de sesión por huella (pide contraseña):
+# 1) Instala el controlador corregido y activa el inicio de sesión por huella (pide tu contraseña):
 sudo ./install.sh
 
 # 2) Registra tu dedo (ejecuta como TU usuario, NO con sudo):
@@ -92,8 +92,8 @@ Eso es todo. Después del paso 2 puedes:
 > El paso 1 necesita root para instalar paquetes del sistema.
 > El paso 2 debe ejecutarse como tu usuario normal porque el sistema de permisos
 > del escritorio (polkit) solo autoriza el registro de huellas para el usuario
-> que está sentado frente al equipo. Si ejecutas el paso 2 con `sudo`
-> obtendrás un error de `PermissionDenied`.
+> que está sentado frente al equipo. Ejecutar el paso 2 con `sudo` dará un error
+> de `PermissionDenied`.
 
 ---
 
@@ -166,7 +166,7 @@ sudo ./install.sh
 
 ### La huella dejó de funcionar después de una actualización del sistema
 
-Puede ocurrir si un `dnf upgrade` sobreescribe el controlador corregido. Solo ejecuta de nuevo:
+Puede ocurrir si `dnf upgrade` sobreescribe el controlador corregido. Solo ejecuta de nuevo:
 
 ```bash
 sudo ./install.sh
@@ -195,7 +195,7 @@ El script pide confirmación; pasa `--yes` para omitir la pregunta.
 
 El `libfprint` estándar de Fedora aún no soporta el sensor FocalTech Match-on-Chip
 que viene con el Galaxy Book 4 (USB ID `2808:6553`). La corrección es un `libfprint`
-con parche basado en el MR #554 de libfprint por Sid1803, aún no fusionado al upstream.
+con parche basado en el MR #554 de libfprint por Sid1803, aún no fusionado upstream.
 
 Este repositorio es el equivalente Fedora de
 [ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu](https://github.com/ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu),
@@ -221,8 +221,8 @@ compilado contra las bibliotecas de Fedora.
 ### Version lock
 
 El `install.sh` bloquea la versión de `libfprint` con `dnf versionlock` automáticamente.
-Sin esto, un `sudo dnf upgrade` eventualmente reemplazaría el build corregido
-por el estándar de Fedora, rompiendo el sensor silenciosamente.
+Sin esto, un `sudo dnf upgrade` eventualmente reemplazaría el build corregido por el
+estándar de Fedora, rompiendo el sensor silenciosamente.
 
 Verás esto en `dnf upgrade`:
 
@@ -285,7 +285,7 @@ sudo ausearch -m AVC -ts recent
 - Build COPR para Fedora:
   [`hichambel/libfprint-galaxybook`](https://copr.fedorainfracloud.org/coprs/hichambel/libfprint-galaxybook/).
 - Port para Fedora (este repo): scripts, hook systemd, helper de registro de múltiples dedos,
-  versionlock automático, documentación — desarrollado con la ayuda de **Claude Sonnet 4.5**.
+  versionlock automático, documentación — desarrollado con la ayuda de **Claude Opus 4.7**.
 - Dibujo ASCII de las manos adaptado de
   [Joan G. Stark (Spunk)](https://www.asciiart.eu/art/f8977d5ed396941a).
 

@@ -285,7 +285,7 @@ sudo ausearch -m AVC -ts recent
 - Build COPR para Fedora:
   [`hichambel/libfprint-galaxybook`](https://copr.fedorainfracloud.org/coprs/hichambel/libfprint-galaxybook/).
 - Port para Fedora (este repo): scripts, hook systemd, helper de cadastro de múltiplos dedos,
-  versionlock automático, documentação — desenvolvido com auxílio do **Claude Sonnet 4.5**.
+  versionlock automático, documentação — desenvolvido com auxílio do **Claude Opus 4.7**.
 - Desenho ASCII das mãos adaptado de
   [Joan G. Stark (Spunk)](https://www.asciiart.eu/art/f8977d5ed396941a).
 
