@@ -40,12 +40,30 @@ err()   { printf "${C_RED}✗${C_RESET} %s\n" "$*" >&2; }
 title() { printf "\n${C_BOLD}%s${C_RESET}\n" "$*"; }
 
 # ---------- constants ------------------------------------------------------
+# Canonical list (used to validate finger names received as CLI args).
 FINGERS=(
   left-thumb          right-thumb
   left-index-finger   right-index-finger
   left-middle-finger  right-middle-finger
   left-ring-finger    right-ring-finger
   left-little-finger  right-little-finger
+)
+
+# Order shown in the visual hand picker (1..10).
+# Reads naturally left-to-right, pinky-to-pinky:
+#   1  left-little, 2 left-ring, 3 left-middle, 4 left-index, 5 left-thumb,
+#   6 right-thumb, 7 right-index, 8 right-middle, 9 right-ring, 10 right-little
+FINGERS_BY_PROMPT=(
+  left-little-finger
+  left-ring-finger
+  left-middle-finger
+  left-index-finger
+  left-thumb
+  right-thumb
+  right-index-finger
+  right-middle-finger
+  right-ring-finger
+  right-little-finger
 )
 
 # Determine which user to manage fingerprints for.
@@ -94,10 +112,8 @@ is_valid_finger() {
 
 list_finger_names() {
   printf "${C_DIM}Valid finger names:${C_RESET}\n"
-  local i=1
-  for f in "${FINGERS[@]}"; do
-    printf "  %2d) %s\n" "$i" "$f"
-    i=$((i + 1))
+  for f in "${FINGERS_BY_PROMPT[@]}"; do
+    printf "  - %s\n" "$f"
   done
 }
 
@@ -114,19 +130,46 @@ is_enrolled() {
 }
 
 prompt_finger() {
-  local prompt="${1:-Pick a finger}"
-  local i=1
-  echo
-  for f in "${FINGERS[@]}"; do
-    printf "  %2d) %s\n" "$i" "$f"
-    i=$((i + 1))
-  done
-  echo
+  # All UI goes to stderr because this function is called inside $() and
+  # only the chosen finger name (printed at the end) must reach stdout.
+  local prompt="${1:-Which finger do you want to enroll?}"
+  {
+    echo
+    printf "${C_BOLD}%s${C_RESET}\n" "$prompt"
+    echo
+    cat <<'EOF'
+   LEFT HAND                         RIGHT HAND
+
+       1                                       6
+     2                                           7
+     3   |  | |                         | | |   8
+     4   |  | |                         | | |   9
+     5   |__| |                         | |__|  10
+         |    |                         |    |
+         |____|                         |____|
+
+    1) left-little-finger    6) right-thumb
+    2) left-ring-finger      7) right-index-finger
+    3) left-middle-finger    8) right-middle-finger
+    4) left-index-finger     9) right-ring-finger
+    5) left-thumb           10) right-little-finger
+EOF
+    echo
+    echo "  Most people pick ${C_BOLD}7${C_RESET} (right index finger) — the one you usually"
+    echo "  point with."
+    echo
+  } >&2
   local choice
+  # Read from the controlling tty when there is one, otherwise stdin.
+  # Probe by trying to open /dev/tty in a subshell.
+  local READ_SRC="/dev/stdin"
+  if (exec 3</dev/tty) 2>/dev/null; then
+    READ_SRC=/dev/tty
+  fi
   while true; do
-    read -rp "$prompt [1-${#FINGERS[@]}]: " choice
-    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#FINGERS[@]} )); then
-      echo "${FINGERS[$((choice - 1))]}"
+    read -rp "Type a number from 1 to 10 and press Enter: " choice <"$READ_SRC"
+    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#FINGERS_BY_PROMPT[@]} )); then
+      echo "${FINGERS_BY_PROMPT[$((choice - 1))]}"
       return 0
     fi
     err "Invalid choice."

@@ -1,102 +1,243 @@
 # Samsung Galaxy Book 4 Fingerprint Fix (Fedora)
 
-Enables the fingerprint sensor on Samsung Galaxy Book 4 devices running
-**Fedora**. This is the Fedora counterpart of
-[ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu](https://github.com/ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu)
-(which ships Debian `.deb` files). Where that repo distributes a
-pre-built `libfprint`, this one wires up the equivalent Fedora
-artefact: the
-[`hichambel/libfprint-galaxybook`](https://copr.fedorainfracloud.org/coprs/hichambel/libfprint-galaxybook/)
-COPR repository, which provides a `libfprint` RPM rebuilt with the
-FocalTech Match-on-Chip support (libfprint MR #554, by Sid1803).
+**Languages:** **English** · [Português (Brasil)](README.pt-BR.md) · [Español](README.es.md)
+
+Make the fingerprint reader of the **Samsung Galaxy Book 4** work on **Fedora**
+(login, lock screen and `sudo`).
+
+> **TL;DR for end users**
+>
+> 1. Open a terminal.
+> 2. Copy-paste the four commands in [Quick start](#quick-start).
+> 3. Done. You can log in and use `sudo` with your finger.
+
+---
+
+## Will this work for me?
+
+You need **all three** of these to be true:
+
+- [x] You have a **Samsung Galaxy Book 4** (Pro, Ultra or 360).
+- [x] You are running **Fedora** (43, 44 beta confirmed; 42 likely).
+- [x] You see the sensor when you run:
+      ```bash
+      lsusb | grep 2808:6553
+      ```
+      If a line appears, you're good. If nothing shows up, this fix
+      will **not** help you — it is specific to that exact sensor.
 
 ---
 
 ## Quick start
+
+Open a terminal and run:
 
 ```bash
 git clone https://github.com/dalsochio/Samsung-Galaxy-Book-4-Fingerprint-Fedora.git
 cd Samsung-Galaxy-Book-4-Fingerprint-Fedora
 chmod +x install.sh fingerprint-enroll.sh uninstall.sh
 
-# 1) Install the patched libfprint and enable PAM (run as root):
+# 1) Install the patched driver and enable fingerprint login (asks for password):
 sudo ./install.sh
 
-# 2) Enroll your fingerprint (run as your NORMAL user, NOT sudo):
+# 2) Register your finger (run as YOUR user, NOT with sudo):
 ./fingerprint-enroll.sh
 ```
 
-> The two steps run under different accounts on purpose. The installer
-> needs root to change system files. The enrollment must run as your
-> normal user so the desktop authentication agent can authorise it —
-> running it under `sudo` causes a `PermissionDenied` error from
-> polkit.
+That's it. After step 2 you can:
+
+- Touch the sensor at the **login screen** instead of typing your password.
+- Touch the sensor when you run `sudo` in a terminal.
+- Touch the sensor on the **lock screen**.
+
+> **Why two steps under different accounts?**
+> Step 1 needs root because it installs system packages.
+> Step 2 must run as your normal user because the desktop's
+> permission system (polkit) only authorises fingerprint enrollment
+> for the user actually sitting at the desk. If you run step 2 with
+> `sudo` you'll get a `PermissionDenied` error.
 
 ---
 
-## What the installer does
+## What to expect when registering your finger
 
-1. **Pre-flight checks** — confirms you are on Fedora and that the
-   FocalTech sensor (`2808:6553`) is plugged in. Aborts with a clear
-   message otherwise.
-2. **Cleans up** any leftover files from previous manual `.so` drops
-   (these would shadow the COPR RPM and cause `undefined symbol` errors).
-3. **Enables the COPR**
-   `hichambel/libfprint-galaxybook`. If your Fedora release has no
-   native build (e.g. Fedora 44 beta), it transparently falls back to
-   the `fedora-43-x86_64` build, which is ABI-compatible.
-4. **Installs** `fprintd`, `fprintd-pam` and the patched `libfprint`
-   from the COPR (force-replacing the stock one if needed).
-5. **Turns on fingerprint login** for `sudo`, the login screen and
-   the lock screen.
+When you run `./fingerprint-enroll.sh`, you'll see a menu like this:
 
-   > ⚠️ **Read this carefully — only matters the first time:**
-   > To turn on fingerprint login, the installer must modify some
-   > system files. As a side effect, **your desktop may close itself
-   > and bring you back to the login screen**, as if you had clicked
-   > "Log out". Saved files are safe, but **unsaved work in open
-   > apps (browser tabs, editors, terminals) will be lost.**
-   >
-   > Before answering "yes" to the PAM prompt:
-   > - Save your work everywhere.
-   > - Close apps whose state you don't want to lose.
-   > - You can run the installer from a regular terminal — it will
-   >   ask you, then briefly your desktop may restart.
-   >
-   > After this happens once, the installer skips this step on
-   > every later run. You won't be asked again.
-6. **Installs a systemd hook** (`fprintd-resume.service`) that
-   restarts `fprintd` after every suspend/hibernate. The FocalTech
-   driver is known to lose the device after sleep without this.
-7. **Version-locks `libfprint`** via `dnf versionlock` so a future
-   `dnf upgrade` does not silently replace the patched build with the
-   stock one and break the sensor again. **You can unlock it any time
-   — see the section below.**
-8. **Refreshes** `ldconfig`, `udev`, and restarts `fprintd`.
-9. **Tells you what to do next** — namely, run
-   `./fingerprint-enroll.sh` as your normal user (without sudo) to
-   actually register a finger.
+```
+Fingerprint manager (user: yourname)
 
----
+  Currently enrolled: (none)
 
-## Supported hardware
-
-* Device: Samsung Galaxy Book 4 series (Pro / Ultra / 360)
-* Sensor: FocalTech FT9365 ESS (Match-on-Chip)
-* USB ID: `2808:6553`
-
-Verify with:
-
-```bash
-lsusb | grep 2808:6553
+  e) Enroll a new finger
+  v) Verify a finger (test)
+  d) Delete a finger
+  D) Delete ALL fingers
+  l) List enrolled fingers
+  q) Quit
+>
 ```
 
-If the line is missing the sensor is either disabled in firmware or it
-is a different model — this fix will not help.
+Type `e` and press Enter, then pick a finger. Then:
+
+- Place your finger **flat and centered** on the sensor.
+- **Lift it completely** between touches.
+- Repeat **8 to 15 times**, until you see `enroll-completed`.
+- The script will then offer to **test** the finger right away.
+
+If you mess up, just keep going — the sensor only counts good touches.
+
+### What the messages mean
+
+| Message                        | Meaning (in plain words)                |
+|--------------------------------|-----------------------------------------|
+| `enroll-stage-passed`          | OK, that touch worked. Keep going.      |
+| `enroll-finger-not-centered`   | You missed the sensor. Try again.       |
+| `enroll-retry-scan`            | Lift your finger and touch again.       |
+| `enroll-completed`             | Done! Your finger is registered.        |
+
+You can register **as many fingers as you want**. Just choose `e` again
+in the menu, or run `./fingerprint-enroll.sh enroll left-thumb`.
 
 ---
 
-## Fedora version compatibility
+## Common problems (read this if something doesn't work)
+
+### `sudo` does not ask for fingerprint
+
+Make sure the feature is on:
+
+```bash
+authselect current
+```
+
+If the output does not mention `with-fingerprint`, run:
+
+```bash
+sudo authselect enable-feature with-fingerprint
+sudo authselect apply-changes
+```
+
+### Sensor stops working after suspend
+
+The installer ships a fix for this (a small systemd hook that restarts
+`fprintd` on wake-up). If it ever fails:
+
+```bash
+sudo systemctl restart fprintd
+```
+
+### `failed to claim device: Remote peer disconnected`
+
+`fprintd` crashed. Most often this means an old library is in the way.
+Reinstall:
+
+```bash
+sudo ./uninstall.sh
+sudo ./install.sh
+```
+
+### Enrollment keeps saying `enroll-finger-not-centered`
+
+- Use the **pad** of your finger, not the tip.
+- Cover the sensor fully.
+- Stay still until the message changes.
+
+### Fingerprint stopped working after a system update
+
+That can happen if a `dnf upgrade` overrides the patched driver. Just
+re-run:
+
+```bash
+sudo ./install.sh
+```
+
+---
+
+## Uninstall / Rollback
+
+To undo everything:
+
+```bash
+sudo ./uninstall.sh
+```
+
+This will **delete every registered fingerprint** and put your system
+back to the way it was. The script asks for confirmation; pass `--yes`
+to skip the prompt.
+
+---
+
+---
+
+## Technical reference (for advanced users)
+
+The sections below are for power users, packagers and people debugging
+the installer.
+
+### Why this exists
+
+Fedora's stock `libfprint` does not yet support the FocalTech
+Match-on-Chip sensor that ships with the Galaxy Book 4
+(USB ID `2808:6553`). The fix is a patched `libfprint` based on the
+unmerged libfprint MR #554 by Sid1803.
+
+This repository is the Fedora counterpart of
+[ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu](https://github.com/ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu),
+which ships Debian `.deb` files with the same patch. Where the
+upstream repo distributes a pre-built binary, this one wires up the
+equivalent Fedora artefact: the
+[`hichambel/libfprint-galaxybook`](https://copr.fedorainfracloud.org/coprs/hichambel/libfprint-galaxybook/)
+COPR.
+
+> Why not reuse the Debian `.so`? Because it is dynamically linked
+> against `libgusb` symbols tagged `LIBGUSB_0.1.0`, while Fedora's
+> `libgusb` exports the same functions tagged `LIBGUSB_0.2.8`.
+> Dropping the Debian binary in `/usr/lib64` produces
+> `undefined symbol: g_usb_device_get_interfaces` and `fprintd`
+> dies. The COPR build is compiled against Fedora's libraries.
+
+### What the installer actually does
+
+1. **Pre-flight** — checks Fedora (`/etc/os-release`) and presence of
+   sensor `2808:6553`. Aborts otherwise.
+2. **Cleanup** — removes any leftover `.so`/`.h`/`.pc`/`.gir` that
+   are not RPM-managed (would shadow the COPR build).
+3. **Enable COPR** `hichambel/libfprint-galaxybook`. If the user's
+   Fedora has no native chroot, falls back to `fedora-43-x86_64`
+   by writing `/etc/yum.repos.d/_copr_hichambel-libfprint-galaxybook.repo`
+   manually.
+4. **Install** `fprintd`, `fprintd-pam`, `libfprint`, force-replacing
+   the stock build with the COPR NVR if needed.
+5. **Enable PAM** via `authselect enable-feature with-fingerprint`
+   (idempotent; skipped if already enabled, because
+   `apply-changes` rewrites `/etc/pam.d/*` and may force-logout the
+   active GDM session).
+6. **Install systemd unit** `fprintd-resume.service` — restarts
+   `fprintd` after `suspend.target`, `hibernate.target`,
+   `hybrid-sleep.target`, `suspend-then-hibernate.target`.
+7. **Version-lock** `libfprint` via `dnf versionlock` (auto-installs
+   `python3-dnf-plugin-versionlock` if missing).
+8. **Refresh** `ldconfig`, `udevadm control --reload-rules`,
+   `udevadm trigger`, `systemctl restart fprintd`.
+9. **Print summary** with installed NVR, service state, lock state.
+10. **Tell user** to run `./fingerprint-enroll.sh` as their user.
+
+### Manual installation
+
+```bash
+sudo dnf install -y dnf-plugins-core
+sudo dnf copr enable -y hichambel/libfprint-galaxybook
+sudo dnf install -y fprintd fprintd-pam libfprint
+sudo dnf reinstall -y libfprint
+sudo authselect enable-feature with-fingerprint
+sudo authselect apply-changes
+sudo systemctl restart fprintd
+```
+
+If `dnf copr enable` reports no chroot for your Fedora release, write
+the repo file by hand pointing at `fedora-43-x86_64` (see `install.sh`).
+
+### Fedora version compatibility
 
 | Fedora        | Status                                                                 |
 |---------------|------------------------------------------------------------------------|
@@ -106,92 +247,22 @@ is a different model — this fix will not help.
 | 44 (beta)     | **Tested, works via the `fedora-43` fallback.**                        |
 | 45+           | Best-effort while the C ABI of glib2 / libgusb / libusb1 stays stable. |
 
-When `hichambel/libfprint-galaxybook` publishes a build for your exact
-Fedora version, simply re-run `sudo ./install.sh` — the installer
-prefers the native chroot whenever it is available.
-
----
-
-## Manual installation (no scripts)
-
-If you prefer to do it by hand:
+### `fingerprint-enroll.sh` CLI
 
 ```bash
-sudo dnf install -y dnf-plugins-core
-sudo dnf copr enable -y hichambel/libfprint-galaxybook
-sudo dnf install -y fprintd fprintd-pam libfprint
-sudo dnf reinstall -y libfprint        # force the COPR build
-sudo authselect enable-feature with-fingerprint
-sudo authselect apply-changes
-sudo systemctl restart fprintd
-```
-
-If `dnf copr enable` complains that there is no chroot for your
-Fedora version, the script-based installation handles that for you;
-doing it manually requires creating a `.repo` file pointing at
-`fedora-43-x86_64` (see the install.sh source).
-
----
-
-## Fingerprint enrollment (terminal-only)
-
-Fedora ships **no graphical interface** for enrolling fingerprints, so
-it must be done from the terminal. This repository ships a friendly
-helper, `fingerprint-enroll.sh`, that drives `fprintd-*` for you.
-
-### Run it
-
-```bash
-./fingerprint-enroll.sh
-```
-
-Without arguments it shows an interactive menu:
-
-```
-Fingerprint manager (user: yourname)
-
-  Currently enrolled:
-    ● right-index-finger
-
-  e) Enroll a new finger
-  v) Verify a finger (test)
-  d) Delete a finger
-  D) Delete ALL fingers
-  l) List enrolled fingers
-  q) Quit
-```
-
-It also accepts subcommands for scripting:
-
-```bash
+./fingerprint-enroll.sh                                  # interactive menu
 ./fingerprint-enroll.sh list
 ./fingerprint-enroll.sh enroll right-index-finger
-./fingerprint-enroll.sh enroll right-index-finger left-thumb     # multiple
+./fingerprint-enroll.sh enroll right-index-finger left-thumb
 ./fingerprint-enroll.sh verify right-index-finger
 ./fingerprint-enroll.sh delete left-thumb
 ./fingerprint-enroll.sh delete-all
 ```
 
-### What to expect during enrollment
+The script refuses to run as root (polkit denies the operations) and
+auto-starts `fprintd.service` if needed.
 
-* You will see prompts in the terminal — there is no popup window.
-* Place your finger **flat and centered** on the sensor.
-* **Lift your finger completely** between touches.
-* Expect 8 to 15 touches until you see `enroll-completed`.
-
-Status messages explained:
-
-| Message                        | Meaning                              |
-|--------------------------------|--------------------------------------|
-| `enroll-stage-passed`          | Touch was good, keep going.          |
-| `enroll-finger-not-centered`   | Reposition the finger and try again. |
-| `enroll-retry-scan`            | Lift and touch again.                |
-| `enroll-completed`             | Done. Finger is registered.          |
-
-After enrollment the helper offers to verify the finger immediately
-(`fprintd-verify`) so you know it really works.
-
-### Valid finger names
+#### Valid finger names
 
 ```
 left-thumb         right-thumb
@@ -201,194 +272,65 @@ left-ring-finger   right-ring-finger
 left-little-finger right-little-finger
 ```
 
----
+### Version lock
 
-## Using the fingerprint
+`install.sh` runs `dnf versionlock add libfprint` automatically. Without
+it, a routine `sudo dnf upgrade` would eventually pull the stock
+Fedora `libfprint` back, overwriting the patched build and silently
+breaking the sensor.
 
-Once a finger is enrolled, it is automatically available for:
-
-* **`sudo`** — try `sudo -k && sudo ls` and you should be asked to
-  touch the sensor before / instead of typing your password.
-* **GDM login screen** — touch the sensor at the login prompt.
-* **Lock screen** — same.
-
-If `sudo` still asks only for a password, check that authselect knows
-about the feature:
-
-```bash
-authselect current
-```
-
-The output should mention `with-fingerprint`. If it does not:
-
-```bash
-sudo authselect enable-feature with-fingerprint
-sudo authselect apply-changes
-```
-
----
-
-## Suspend & resume
-
-The FocalTech MoC driver tends to lose the device after the laptop
-suspends. To work around this the installer ships a systemd unit at
-`/etc/systemd/system/fprintd-resume.service` that restarts `fprintd`
-on every wake-up. It is enabled automatically and you do not have to
-touch it.
-
-If you ever want to inspect or disable it:
-
-```bash
-systemctl status fprintd-resume.service
-sudo systemctl disable fprintd-resume.service
-```
-
----
-
-## Version lock (important)
-
-`install.sh` automatically version-locks the `libfprint` package using
-`dnf versionlock`. Without this, a routine `sudo dnf upgrade` would
-eventually pull the stock Fedora `libfprint` back, overwriting the
-patched build and silently breaking the sensor.
-
-**You will see this in `dnf upgrade`:**
+You will see this in `dnf upgrade`:
 
 ```
 Package "libfprint" excluded by versionlock plugin.
 ```
 
-That is expected — it is the lock doing its job.
-
-### How to unlock (e.g. when the COPR has a build for your Fedora)
+Unlock with:
 
 ```bash
-sudo dnf versionlock list                  # see what's locked
-sudo dnf versionlock delete libfprint      # unlock
+sudo dnf versionlock list
+sudo dnf versionlock delete libfprint
 ```
 
-After unlocking, you are free to upgrade. To re-apply the lock later:
+Re-apply later:
 
 ```bash
 sudo dnf versionlock add libfprint
 ```
 
----
-
-## Verification
-
-After installation, sanity-check with:
+### Verification commands
 
 ```bash
-# The library should belong to the COPR RPM (release contains "galaxybook"):
-rpm -qf /usr/lib64/libfprint-2.so.2
-
-# fprintd should be running and should resolve the patched library:
+rpm -qf /usr/lib64/libfprint-2.so.2          # should contain "galaxybook"
 systemctl status fprintd
 ldd /usr/libexec/fprintd | grep fprint
-
-# The device must be visible:
 lsusb | grep 2808:6553
-
-# Enrolled fingers (per user):
 fprintd-list "$USER"
 ```
 
----
+### What `uninstall.sh` does
 
-## Troubleshooting
+In order:
 
-### `failed to claim device: Remote peer disconnected`
+1. Deletes **all** enrolled fingerprints (per user under
+   `/var/lib/fprint/`).
+2. Disables and removes the `fprintd-resume.service` systemd unit.
+3. Removes the `libfprint` version-lock.
+4. Disables the PAM `with-fingerprint` feature.
+5. Removes any unmanaged files from previous manual installs.
+6. Removes the COPR repository (and the manual `.repo` file).
+7. Runs `dnf distro-sync libfprint` to bring back the stock build.
+8. Refreshes linker, udev, and restarts `fprintd`.
 
-`fprintd` is crashing. Look at the log:
+The script asks for confirmation; `--yes` skips the prompt.
 
-```bash
-journalctl -u fprintd -n 50 --no-pager
-```
-
-If you see `undefined symbol: g_usb_device_get_interfaces`, an old
-manually-installed `.so` is shadowing the RPM. Run:
-
-```bash
-sudo ./uninstall.sh
-sudo ./install.sh
-```
-
-### Sensor not detected (`lsusb | grep 2808:6553` empty)
-
-This is a hardware/firmware issue, not a `libfprint` issue. Check
-BIOS settings, kernel version, and that no Windows fast-boot left the
-USB device powered down.
-
-### Enrollment keeps saying `enroll-finger-not-centered`
-
-* Use the **pad** of your finger, not the tip.
-* Cover the sensor fully and stay still until the message changes.
-* Cancel with `Ctrl+C` and start over if it gets stuck for more than
-  a minute.
-
-### `sudo` does not ask for fingerprint
-
-Check that PAM knows about the feature:
-
-```bash
-authselect current
-sudo authselect enable-feature with-fingerprint
-sudo authselect apply-changes
-```
-
-### After suspend the sensor stops working
-
-The resume hook normally fixes this. If it does not:
-
-```bash
-sudo systemctl restart fprintd
-```
-
-If that consistently fails to recover, you can disable the laptop's
-USB autosuspend for the sensor (see the `udev` section of the Arch
-wiki on `fprint`).
-
-### SELinux denials
-
-If you suspect SELinux is blocking something:
-
-```bash
-sudo ausearch -m AVC -ts recent
-```
-
-The COPR RPM ships with proper SELinux labels, so this should not
-happen, but it is the first thing to check.
-
----
-
-## Uninstall / Rollback
-
-```bash
-sudo ./uninstall.sh
-```
-
-This fully reverses `install.sh`. It will:
-
-1. Delete **all** enrolled fingerprints from every user.
-2. Disable and remove the `fprintd-resume.service` systemd unit.
-3. Remove the `libfprint` version-lock.
-4. Disable the PAM `with-fingerprint` feature.
-5. Remove any unmanaged files from previous manual installs.
-6. Remove the `hichambel/libfprint-galaxybook` COPR repository.
-7. `dnf distro-sync libfprint` to bring back the stock Fedora build.
-8. Refresh the linker cache, udev rules, and restart `fprintd`.
-
-The script will ask for confirmation before doing anything; pass
-`--yes` to skip the prompt.
-
----
-
-## Repository layout
+### Repository layout
 
 ```
 .
-├── README.md                      # this file
+├── README.md                      # this file (English)
+├── README.pt-BR.md                # Portuguese (Brazil) translation
+├── README.es.md                   # Spanish translation
 ├── install.sh                     # install everything
 ├── uninstall.sh                   # full rollback
 ├── fingerprint-enroll.sh          # enroll/list/verify/delete helper
@@ -396,16 +338,25 @@ The script will ask for confirmation before doing anything; pass
     └── fprintd-resume.service     # restart fprintd after wake-up
 ```
 
+### SELinux
+
+The COPR RPM ships with proper SELinux labels. If you suspect a
+denial:
+
+```bash
+sudo ausearch -m AVC -ts recent
+```
+
 ---
 
 ## Credits
 
-* Original Ubuntu / Debian fix:
+- Original Ubuntu / Debian fix:
   [ishashanknigam](https://github.com/ishashanknigam/Samsung-Galaxy-Book-4-Fingerprint-Ubuntu).
-* FocalTech MoC driver: libfprint MR #554 by Sid1803.
-* Fedora COPR build:
+- FocalTech MoC driver: libfprint MR #554 by Sid1803.
+- Fedora COPR build:
   [`hichambel/libfprint-galaxybook`](https://copr.fedorainfracloud.org/coprs/hichambel/libfprint-galaxybook/).
-* Fedora port (this repo): scripts, systemd hook, multi-finger enroll
+- Fedora port (this repo): scripts, systemd hook, multi-finger enroll
   helper, version-lock automation, troubleshooting docs.
 
 ---
