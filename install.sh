@@ -138,9 +138,45 @@ fi
 
 # ---------- 5. authselect --------------------------------------------------
 step 5 "$TOTAL_STEPS" "Enabling PAM fingerprint feature (login / sudo / GDM)"
-authselect enable-feature with-fingerprint || true
-authselect apply-changes || true
-ok "PAM with-fingerprint feature enabled."
+# `authselect apply-changes` rewrites /etc/pam.d/*. GDM watches those files
+# and may force-logout the active graphical session when they change. To
+# avoid that surprise, we only apply when the feature is not already active.
+if authselect current 2>/dev/null | grep -q '^- with-fingerprint'; then
+  ok "Fingerprint login is already enabled — nothing to change."
+else
+  echo
+  warn "IMPORTANT — read this before continuing:"
+  echo
+  echo "  The next step turns ON fingerprint login for sudo and the login"
+  echo "  screen. To do that, this installer changes some system files."
+  echo
+  echo "  ${C_BOLD}Possible side effect:${C_RESET} your desktop may close itself and send"
+  echo "  you back to the login screen, AS IF YOU CLICKED LOG OUT."
+  echo "  You will NOT lose any saved files, but UNSAVED work in open"
+  echo "  apps (browser tabs, text editors, etc.) ${C_BOLD}will be lost${C_RESET}."
+  echo
+  echo "  → Save your work first."
+  echo "  → Close apps you don't want to lose state from."
+  echo "  → Then come back and answer 'y'."
+  echo
+  echo "  This only happens once. Future runs of this installer will skip"
+  echo "  this step automatically."
+  echo
+  read -rp "Ready to continue? [y/N] " ans
+  case "${ans,,}" in
+    y|yes)
+      authselect enable-feature with-fingerprint || true
+      authselect apply-changes || true
+      ok "Fingerprint login enabled."
+      ;;
+    *)
+      warn "Skipped. To enable later, run:"
+      echo "    sudo authselect enable-feature with-fingerprint"
+      echo "    sudo authselect apply-changes"
+      echo "  (or simply re-run this installer — it will offer it again)"
+      ;;
+  esac
+fi
 
 # ---------- 6. systemd resume drop-in --------------------------------------
 step 6 "$TOTAL_STEPS" "Installing systemd unit to restart fprintd after suspend/resume"

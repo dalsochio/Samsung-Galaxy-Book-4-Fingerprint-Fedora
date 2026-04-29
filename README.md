@@ -43,9 +43,24 @@ also run the enrollment helper any time:
    the `fedora-43-x86_64` build, which is ABI-compatible.
 4. **Installs** `fprintd`, `fprintd-pam` and the patched `libfprint`
    from the COPR (force-replacing the stock one if needed).
-5. **Enables PAM fingerprint** via `authselect enable-feature
-   with-fingerprint` so login, `sudo`, GDM and the lock screen accept
-   your finger.
+5. **Turns on fingerprint login** for `sudo`, the login screen and
+   the lock screen.
+
+   > ⚠️ **Read this carefully — only matters the first time:**
+   > To turn on fingerprint login, the installer must modify some
+   > system files. As a side effect, **your desktop may close itself
+   > and bring you back to the login screen**, as if you had clicked
+   > "Log out". Saved files are safe, but **unsaved work in open
+   > apps (browser tabs, editors, terminals) will be lost.**
+   >
+   > Before answering "yes" to the PAM prompt:
+   > - Save your work everywhere.
+   > - Close apps whose state you don't want to lose.
+   > - You can run the installer from a regular terminal — it will
+   >   ask you, then briefly your desktop may restart.
+   >
+   > After this happens once, the installer skips this step on
+   > every later run. You won't be asked again.
 6. **Installs a systemd hook** (`fprintd-resume.service`) that
    restarts `fprintd` after every suspend/hibernate. The FocalTech
    driver is known to lose the device after sleep without this.
