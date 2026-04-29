@@ -50,6 +50,20 @@ FINGERS=(
 
 USER_NAME="${SUDO_USER:-$USER}"
 
+# Refuse to run for the root account: enrolling fingerprints under root is
+# almost never what the user wants, and fprintd's DBus policy denies it
+# anyway (PermissionDenied: setusername).
+if [[ "$USER_NAME" == "root" || "$EUID" -eq 0 ]]; then
+  printf "${C_RED}✗${C_RESET} This script must run as your normal user, not root.\n" >&2
+  echo "" >&2
+  echo "  If you launched it via 'sudo', exit and run it again WITHOUT sudo:" >&2
+  echo "      ./fingerprint-enroll.sh" >&2
+  echo "" >&2
+  echo "  To target a specific user from a root shell:" >&2
+  echo "      sudo -u <username> ./fingerprint-enroll.sh" >&2
+  exit 1
+fi
+
 # ---------- helpers --------------------------------------------------------
 require_fprintd() {
   if ! command -v fprintd-enroll >/dev/null 2>&1; then

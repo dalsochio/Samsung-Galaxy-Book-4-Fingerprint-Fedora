@@ -217,22 +217,43 @@ ok "All done."
 # ---------- 10. optional enrollment ----------------------------------------
 step 10 "$TOTAL_STEPS" "Optional fingerprint enrollment"
 
-cat <<EOF
+# Figure out the real (non-root) user, even if the installer was started
+# from a root shell (`su -`, `sudo -i`, etc.).
+TARGET_USER="${SUDO_USER:-}"
+if [[ -z "$TARGET_USER" ]]; then
+  TARGET_USER="$(logname 2>/dev/null || true)"
+fi
+if [[ -z "$TARGET_USER" || "$TARGET_USER" == "root" ]]; then
+  TARGET_USER="$(who am i 2>/dev/null | awk '{print $1}')"
+fi
 
-Fedora has no graphical interface for fingerprint enrollment, so it must
-be done from the terminal. This repository ships a helper script
-(${C_BOLD}fingerprint-enroll.sh${C_RESET}) that walks you through it and lets you
-register multiple fingers, list them, test, or delete.
+echo
+echo "Fedora has no graphical interface for fingerprint enrollment, so it"
+echo "must be done from the terminal. This repository ships a helper script"
+printf "(${C_BOLD}fingerprint-enroll.sh${C_RESET}) that walks you through it and lets you\n"
+echo "register multiple fingers, list them, test, or delete."
+echo
 
-EOF
+if [[ -n "$TARGET_USER" && "$TARGET_USER" != "root" ]]; then
+  echo "Detected user: ${C_BOLD}${TARGET_USER}${C_RESET}"
+  echo "(fingerprints will be enrolled for this user)"
+  echo
+else
+  warn "Could not detect a regular (non-root) user."
+  echo "  You should not enroll fingerprints under the root account."
+  echo "  Skip this step and run the helper later as your normal user:"
+  echo "    $REPO_DIR/fingerprint-enroll.sh"
+  echo
+  TARGET_USER=""
+fi
 
 read -rp "Enroll fingerprints now? [Y/n] " ans
 case "${ans,,}" in
   ""|y|yes)
-    if [[ -n "${SUDO_USER:-}" ]]; then
-      sudo -u "$SUDO_USER" bash "$REPO_DIR/fingerprint-enroll.sh"
+    if [[ -n "$TARGET_USER" ]]; then
+      sudo -u "$TARGET_USER" bash "$REPO_DIR/fingerprint-enroll.sh"
     else
-      bash "$REPO_DIR/fingerprint-enroll.sh"
+      warn "Skipping enrollment because no real user was detected."
     fi
     ;;
   *)
@@ -242,15 +263,13 @@ case "${ans,,}" in
     ;;
 esac
 
-cat <<EOF
-
-----------------------------------------
-Useful commands:
-  fprintd-list \$USER          # show enrolled fingers
-  fprintd-verify              # test
-  ./fingerprint-enroll.sh     # enroll/verify/delete (interactive)
-
-To uninstall everything (and remove enrollments):
-  sudo ./uninstall.sh
-----------------------------------------
-EOF
+echo
+echo "----------------------------------------"
+echo "Useful commands:"
+echo "  fprintd-list \$USER          # show enrolled fingers"
+echo "  fprintd-verify              # test"
+echo "  ./fingerprint-enroll.sh     # enroll/verify/delete (interactive)"
+echo
+echo "To uninstall everything (and remove enrollments):"
+echo "  sudo ./uninstall.sh"
+echo "----------------------------------------"
