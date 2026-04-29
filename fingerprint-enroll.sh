@@ -137,32 +137,44 @@ prompt_finger() {
     echo
     printf "${C_BOLD}%s${C_RESET}\n" "$prompt"
     echo
-    printf "  ${C_BOLD}LEFT HAND${C_RESET}                    ${C_BOLD}RIGHT HAND${C_RESET}\n"
-    echo "  ─────────                    ──────────"
-    printf "   1) pinky                      6) thumb\n"
-    printf "   2) ring                       7) index   ${C_GREEN}← recommended${C_RESET}\n"
-    printf "   3) middle                     8) middle\n"
-    printf "   4) index                      9) ring\n"
-    printf "   5) thumb                     10) pinky\n"
+    printf "     ${C_BOLD}Left hand${C_RESET}                       ${C_BOLD}Right hand${C_RESET}\n"
     echo
-    echo "  Numbers go from your left pinky (1) to your right pinky (10)."
-    echo "  Most people enroll #7 — the right index finger you point with."
+    cat <<'HANDS'
+          _.-._                          _.-._
+        _|1|2|3|\                       /|6|7|8|_
+       |0| | | ||                       || | | |9|
+       | | | | ||                       || | | | |
+       | `     ||_                     _||     ` |
+       ;       /4//                   \\5\       ;
+       |        //                     \\        |
+        \      //                       \\      /
+         |    | |                       | |    |
+         |    | |                       | |    |
+HANDS
+    echo
+    printf "  0) pinky                         5) thumb\n"
+    printf "  1) ring                          6) index  ${C_GREEN}← recommended${C_RESET}\n"
+    printf "  2) middle                        7) middle\n"
+    printf "  3) index                         8) ring\n"
+    printf "  4) thumb                         9) pinky\n"
+    echo
+    echo "  Numbers go from your left pinky (0) to your right pinky (9)."
+    echo "  Most people enroll 6 — the right index finger you point with."
     echo
   } >&2
   local choice
   # Read from the controlling tty when there is one, otherwise stdin.
-  # Probe by trying to open /dev/tty in a subshell.
   local READ_SRC="/dev/stdin"
   if (exec 3</dev/tty) 2>/dev/null; then
     READ_SRC=/dev/tty
   fi
   while true; do
-    read -rp "Type a number from 1 to 10 and press Enter: " choice <"$READ_SRC"
-    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#FINGERS_BY_PROMPT[@]} )); then
-      echo "${FINGERS_BY_PROMPT[$((choice - 1))]}"
+    read -rp "Type a number from 0 to 9 and press Enter: " choice <"$READ_SRC"
+    if [[ "$choice" =~ ^[0-9]$ ]]; then
+      echo "${FINGERS_BY_PROMPT[$choice]}"
       return 0
     fi
-    err "Invalid choice."
+    err "Invalid choice. Type a single digit from 0 to 9."
   done
 }
 

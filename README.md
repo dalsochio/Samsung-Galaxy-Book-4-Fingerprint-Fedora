@@ -358,6 +358,8 @@ sudo ausearch -m AVC -ts recent
   [`hichambel/libfprint-galaxybook`](https://copr.fedorainfracloud.org/coprs/hichambel/libfprint-galaxybook/).
 - Fedora port (this repo): scripts, systemd hook, multi-finger enroll
   helper, version-lock automation, troubleshooting docs.
+- ASCII hand drawing adapted from
+  [Joan G. Stark (Spunk)](https://www.asciiart.eu/art/f8977d5ed396941a).
 
 ---
 
