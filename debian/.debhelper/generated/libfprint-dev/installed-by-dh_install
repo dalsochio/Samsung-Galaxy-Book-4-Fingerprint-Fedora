@@ -1,9 +1,0 @@
-debian/tmp/usr/include/libfprint-2/fp-context.h
-debian/tmp/usr/include/libfprint-2/fp-device.h
-debian/tmp/usr/include/libfprint-2/fp-enums.h
-debian/tmp/usr/include/libfprint-2/fp-image-device.h
-debian/tmp/usr/include/libfprint-2/fp-image.h
-debian/tmp/usr/include/libfprint-2/fp-print.h
-debian/tmp/usr/include/libfprint-2/fprint.h
-debian/tmp/usr/lib/x86_64-linux-gnu/pkgconfig/libfprint-2.pc
-debian/tmp/usr/lib/x86_64-linux-gnu/libfprint-2.so

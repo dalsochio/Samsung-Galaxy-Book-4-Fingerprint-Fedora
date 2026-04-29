@@ -1,4 +1,0 @@
-usr/lib/*/libfprint-2.so.*
-usr/lib/udev/rules.d/*
-usr/lib/*/girepository-1.0/*
-usr/share/gir-1.0/*

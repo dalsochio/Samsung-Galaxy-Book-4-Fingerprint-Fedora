@@ -1,21 +1,220 @@
 #!/usr/bin/env bash
+#
+# Samsung Galaxy Book 4 fingerprint fix — Fedora installer.
+#
+# Uses the COPR repository "hichambel/libfprint-galaxybook", which ships
+# a patched libfprint with Focaltech MoC support (sensor 2808:6553)
+# rebuilt for Fedora — the proper Fedora equivalent of the upstream
+# Debian .deb fix.
+
 set -e
 
-echo "[1/4] Installing dependencies..."
-sudo apt update
-sudo apt install -y fprintd libpam-fprintd
+# ---------- pretty output --------------------------------------------------
+if [[ -t 1 ]]; then
+  C_RESET="\033[0m"; C_BOLD="\033[1m"
+  C_RED="\033[31m"; C_GREEN="\033[32m"; C_YELLOW="\033[33m"; C_BLUE="\033[34m"
+else
+  C_RESET=""; C_BOLD=""; C_RED=""; C_GREEN=""; C_YELLOW=""; C_BLUE=""
+fi
+step() { printf "\n${C_BOLD}${C_BLUE}[%s/%s]${C_RESET} ${C_BOLD}%s${C_RESET}\n" "$1" "$2" "$3"; }
+ok()   { printf "${C_GREEN}✓${C_RESET} %s\n" "$*"; }
+warn() { printf "${C_YELLOW}!${C_RESET} %s\n" "$*"; }
+err()  { printf "${C_RED}✗${C_RESET} %s\n" "$*" >&2; }
 
-echo "[2/4] Installing patched libfprint..."
-sudo dpkg -i libfprint-2-2_*.deb libfprint-dev_*.deb
+# ---------- pre-flight -----------------------------------------------------
+if [[ $EUID -ne 0 ]]; then
+  err "Run as root: sudo $0"
+  exit 1
+fi
 
-echo "[3/4] Fixing library path..."
-sudo ldconfig
+# Detect Fedora
+if [[ ! -r /etc/os-release ]]; then
+  err "Cannot read /etc/os-release. Is this Linux?"
+  exit 1
+fi
+# shellcheck disable=SC1091
+. /etc/os-release
+if [[ "${ID:-}" != "fedora" ]]; then
+  err "This installer is for Fedora only (detected: ${ID:-unknown})."
+  exit 1
+fi
+FEDORA_VER="${VERSION_ID:-unknown}"
 
-echo "[4/4] Restarting service..."
-sudo systemctl restart fprintd
+# Detect the Galaxy Book 4 fingerprint sensor
+if ! command -v lsusb >/dev/null 2>&1; then
+  warn "lsusb not found; installing usbutils..."
+  dnf install -y usbutils
+fi
+if ! lsusb | grep -q '2808:6553'; then
+  err "Focaltech sensor 2808:6553 not detected."
+  echo "  This installer only targets Samsung Galaxy Book 4 hardware."
+  echo
+  echo "  Output of lsusb:"
+  lsusb | sed 's/^/    /'
+  echo
+  err "Aborting."
+  exit 1
+fi
+ok "Detected Focaltech sensor 2808:6553 (Samsung Galaxy Book 4)."
 
-echo "--------------------------------"
-echo "Done!"
-echo "Run:"
-echo "  fprintd-enroll"
-echo "  fprintd-verify"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TOTAL_STEPS=10
+
+# ---------- 1. cleanup -----------------------------------------------------
+step 1 "$TOTAL_STEPS" "Cleaning up leftovers from any previous manual install"
+for f in \
+  /usr/lib64/libfprint-2.so.2.0.0 \
+  /usr/lib64/libfprint-2.so.2 \
+  /usr/lib64/libfprint-2.so \
+  /usr/lib64/girepository-1.0/FPrint-2.0.typelib \
+  /usr/lib64/pkgconfig/libfprint-2.pc \
+  /usr/share/gir-1.0/FPrint-2.0.gir \
+  /usr/lib/udev/rules.d/70-libfprint-2.rules; do
+  if [[ -e "$f" ]] && ! rpm -qf "$f" >/dev/null 2>&1; then
+    warn "removing unmanaged file: $f"
+    rm -f "$f"
+  fi
+done
+rm -f /usr/include/libfprint-2/*.h 2>/dev/null || true
+rmdir /usr/include/libfprint-2 2>/dev/null || true
+
+# ---------- 2. dnf-plugins-core --------------------------------------------
+step 2 "$TOTAL_STEPS" "Ensuring dnf-plugins-core is available"
+dnf install -y dnf-plugins-core
+
+# ---------- 3. enable COPR -------------------------------------------------
+step 3 "$TOTAL_STEPS" "Enabling COPR hichambel/libfprint-galaxybook"
+COPR_OWNER="hichambel"
+COPR_PROJECT="libfprint-galaxybook"
+COPR_REPO_ID="copr:copr.fedorainfracloud.org:${COPR_OWNER}:${COPR_PROJECT}"
+COPR_REPO_FILE="/etc/yum.repos.d/_copr_${COPR_OWNER}-${COPR_PROJECT}.repo"
+
+if dnf copr enable -y "${COPR_OWNER}/${COPR_PROJECT}" 2>&1 | tee /tmp/copr-enable.log \
+   | grep -q "Chroot não encontrado\|Chroot not found"; then
+  COPR_NATIVE_OK=0
+else
+  COPR_NATIVE_OK=1
+fi
+
+# Re-check: dnf copr enable can also succeed silently. Trust the .repo file.
+if [[ "$COPR_NATIVE_OK" -eq 1 && -f "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:${COPR_OWNER}:${COPR_PROJECT}.repo" ]] \
+   || [[ "$COPR_NATIVE_OK" -eq 1 && -f "${COPR_REPO_FILE}" ]]; then
+  ok "Native chroot enabled for Fedora ${FEDORA_VER}."
+else
+  warn "COPR has no native build for Fedora ${FEDORA_VER}."
+  warn "Falling back to fedora-43-x86_64 (ABI-compatible)."
+  echo "  If installation fails, please request a fedora-${FEDORA_VER} build at:"
+  echo "    https://copr.fedorainfracloud.org/coprs/${COPR_OWNER}/${COPR_PROJECT}/"
+  CHROOT="fedora-43-x86_64"
+  cat > "${COPR_REPO_FILE}" <<EOF
+[${COPR_REPO_ID}]
+name=Copr repo for ${COPR_PROJECT} owned by ${COPR_OWNER} (using ${CHROOT})
+baseurl=https://download.copr.fedorainfracloud.org/results/${COPR_OWNER}/${COPR_PROJECT}/${CHROOT}/
+type=rpm-md
+skip_if_unavailable=False
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/${COPR_OWNER}/${COPR_PROJECT}/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+EOF
+  dnf -y --refresh makecache --repo "${COPR_REPO_ID}"
+fi
+
+# ---------- 4. install patched packages ------------------------------------
+step 4 "$TOTAL_STEPS" "Installing fprintd, fprintd-pam and the patched libfprint"
+dnf install -y fprintd fprintd-pam libfprint
+COPR_NVR="$(dnf --disablerepo='*' --enablerepo="${COPR_REPO_ID}" \
+            repoquery --qf '%{name}-%{version}-%{release}' libfprint 2>/dev/null | head -n1 || true)"
+if [[ -n "$COPR_NVR" ]]; then
+  CURRENT_NVR="$(rpm -q --qf '%{name}-%{version}-%{release}' libfprint 2>/dev/null || true)"
+  if [[ "$COPR_NVR" != "$CURRENT_NVR" ]]; then
+    warn "Forcing the COPR build (${COPR_NVR}) over the stock one..."
+    dnf install -y --allowerasing "${COPR_NVR}" || dnf reinstall -y "${COPR_NVR}" || true
+  else
+    ok "COPR build is already installed (${CURRENT_NVR})."
+  fi
+fi
+
+# ---------- 5. authselect --------------------------------------------------
+step 5 "$TOTAL_STEPS" "Enabling PAM fingerprint feature (login / sudo / GDM)"
+authselect enable-feature with-fingerprint || true
+authselect apply-changes || true
+ok "PAM with-fingerprint feature enabled."
+
+# ---------- 6. systemd resume drop-in --------------------------------------
+step 6 "$TOTAL_STEPS" "Installing systemd unit to restart fprintd after suspend/resume"
+install -D -m 0644 "$REPO_DIR/systemd/fprintd-resume.service" \
+  /etc/systemd/system/fprintd-resume.service
+systemctl daemon-reload
+systemctl enable fprintd-resume.service >/dev/null 2>&1 || true
+ok "fprintd-resume.service enabled."
+
+# ---------- 7. version-lock ------------------------------------------------
+step 7 "$TOTAL_STEPS" "Locking libfprint version to prevent future upgrades from breaking it"
+if ! rpm -q python3-dnf-plugin-versionlock >/dev/null 2>&1; then
+  dnf install -y python3-dnf-plugin-versionlock
+fi
+dnf versionlock add libfprint || true
+ok "libfprint is now version-locked."
+warn "If you ever need to unlock it (at your own risk):"
+echo "    sudo dnf versionlock delete libfprint"
+
+# ---------- 8. udev + service refresh --------------------------------------
+step 8 "$TOTAL_STEPS" "Refreshing linker cache, udev rules and fprintd service"
+ldconfig
+udevadm control --reload-rules || true
+udevadm trigger || true
+systemctl restart fprintd || true
+ok "Service restarted."
+
+# ---------- 9. summary -----------------------------------------------------
+step 9 "$TOTAL_STEPS" "Installation summary"
+INSTALLED_NVR="$(rpm -qf /usr/lib64/libfprint-2.so.2 2>/dev/null || echo unknown)"
+echo "  libfprint package : ${INSTALLED_NVR}"
+echo "  fprintd service   : $(systemctl is-active fprintd 2>/dev/null || echo unknown)"
+echo "  Resume hook       : $(systemctl is-enabled fprintd-resume.service 2>/dev/null || echo unknown)"
+echo "  Version lock      : active (libfprint)"
+echo
+ok "All done."
+
+# ---------- 10. optional enrollment ----------------------------------------
+step 10 "$TOTAL_STEPS" "Optional fingerprint enrollment"
+
+cat <<EOF
+
+Fedora has no graphical interface for fingerprint enrollment, so it must
+be done from the terminal. This repository ships a helper script
+(${C_BOLD}fingerprint-enroll.sh${C_RESET}) that walks you through it and lets you
+register multiple fingers, list them, test, or delete.
+
+EOF
+
+read -rp "Enroll fingerprints now? [Y/n] " ans
+case "${ans,,}" in
+  ""|y|yes)
+    if [[ -n "${SUDO_USER:-}" ]]; then
+      sudo -u "$SUDO_USER" bash "$REPO_DIR/fingerprint-enroll.sh"
+    else
+      bash "$REPO_DIR/fingerprint-enroll.sh"
+    fi
+    ;;
+  *)
+    echo
+    echo "Skipped. You can enroll later by running (as your user, no sudo):"
+    echo "    $REPO_DIR/fingerprint-enroll.sh"
+    ;;
+esac
+
+cat <<EOF
+
+----------------------------------------
+Useful commands:
+  fprintd-list \$USER          # show enrolled fingers
+  fprintd-verify              # test
+  ./fingerprint-enroll.sh     # enroll/verify/delete (interactive)
+
+To uninstall everything (and remove enrollments):
+  sudo ./uninstall.sh
+----------------------------------------
+EOF
