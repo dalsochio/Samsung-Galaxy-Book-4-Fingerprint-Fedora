@@ -303,6 +303,54 @@ cmd_enroll() {
   return "$rc"
 }
 
+# prompt_enrolled_finger <prompt>
+# Shows the hand drawing and asks the user to pick one of the ENROLLED fingers
+# using the same 0-9 numbering as the drawing. Returns the finger name on stdout.
+prompt_enrolled_finger() {
+  local prompt="${1:-Which finger?}"
+  local enrolled
+  enrolled="$(get_enrolled)"
+
+  if [[ -z "$enrolled" ]]; then
+    err "No fingerprints enrolled. Enroll one first." >&2
+    return 1
+  fi
+
+  # Build set of valid digit choices (only enrolled fingers).
+  local valid_digits=""
+  local i hint=""
+  for i in {0..9}; do
+    if echo "$enrolled" | grep -qx "${FINGERS_BY_PROMPT[$i]}"; then
+      valid_digits+="$i"
+      hint+="${i}/"
+    fi
+  done
+  hint="${hint%/}"   # trim trailing slash
+
+  {
+    echo
+    printf "${C_BOLD}%s${C_RESET}\n" "$prompt"
+    echo
+    print_hands "$enrolled"
+    echo
+    printf "  ${C_GREEN}●${C_RESET} = enrolled — type its number to select it\n"
+    echo
+  } >&2
+
+  local READ_SRC="/dev/stdin"
+  if (exec 3</dev/tty) 2>/dev/null; then READ_SRC=/dev/tty; fi
+
+  local choice
+  while true; do
+    read -rp "Type a number [${hint}] and press Enter: " choice <"$READ_SRC"
+    if [[ "$choice" =~ ^[0-9]$ ]] && [[ "$valid_digits" == *"$choice"* ]]; then
+      echo "${FINGERS_BY_PROMPT[$choice]}"
+      return 0
+    fi
+    err "Please type one of: ${hint}" >&2
+  done
+}
+
 cmd_verify() {
   local finger="${1:-}"
 
@@ -316,21 +364,7 @@ cmd_verify() {
     if [[ "$(echo "$enrolled" | wc -l)" -eq 1 ]]; then
       finger="$enrolled"
     else
-      title "Which finger to verify?"
-      mapfile -t opts <<< "$enrolled"
-      local i=1
-      for f in "${opts[@]}"; do
-        printf "  %2d) %s\n" "$i" "$f"
-        i=$((i + 1))
-      done
-      local choice
-      read -rp "Pick [1-${#opts[@]}]: " choice
-      if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#opts[@]} )); then
-        finger="${opts[$((choice - 1))]}"
-      else
-        err "Invalid choice."
-        return 1
-      fi
+      finger="$(prompt_enrolled_finger 'Which finger to verify?')" || return 1
     fi
   fi
 
@@ -360,21 +394,7 @@ cmd_delete() {
       warn "Nothing to delete."
       return 0
     fi
-    title "Which finger to delete?"
-    mapfile -t opts <<< "$enrolled"
-    local i=1
-    for f in "${opts[@]}"; do
-      printf "  %2d) %s\n" "$i" "$f"
-      i=$((i + 1))
-    done
-    local choice
-    read -rp "Pick [1-${#opts[@]}]: " choice
-    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#opts[@]} )); then
-      finger="${opts[$((choice - 1))]}"
-    else
-      err "Invalid choice."
-      return 1
-    fi
+    finger="$(prompt_enrolled_finger 'Which finger to delete?')" || return 1
   fi
 
   if ! is_valid_finger "$finger"; then
